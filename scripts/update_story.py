@@ -1,74 +1,78 @@
-import os, re, shutil
-from collections import Counter
-import nltk
-from github import Github
+import os
+import sys
+import re
+from pathlib import Path
+import subprocess
 
-nltk.download('averaged_perceptron_tagger')
+# Get environment variables
+WORD = os.environ.get("WORD", "").strip()
+AUTHOR = os.environ.get("AUTHOR", "unknown")
 
-# --- Environment ---
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-WORD = os.getenv("WORD").strip()
-AUTHOR = os.getenv("AUTHOR")
+# File paths
+STORY_FILE = Path("current_story.md")
+STATS_FILE = Path("story_stats.md")
+README_FILE = Path("README.md")
+STORIES_DIR = Path("stories")
+MAX_WORDS = 500
 
-STORY_FILE = "current_story.md"
-STATS_FILE = "story_stats.md"
-STORIES_DIR = "stories/"
+# Ensure stories directory exists
+STORIES_DIR.mkdir(exist_ok=True)
 
 # --- Validation ---
-def validate_word(word, last_word=None):
-    if not re.match(r'^[A-Za-z]+$', word):
-        return False, "Word must be letters only"
-    if ' ' in word:
-        return False, "Word must be a single word"
-    if last_word:
-        last_pos = nltk.pos_tag([last_word])[0][1]
-        new_pos = nltk.pos_tag([word])[0][1]
-        if last_pos == new_pos and last_pos.startswith('JJ'):
-            return False, "No repeated adjectives consecutively"
-    return True, ""
+def validate_word(word):
+    if not word:
+        return False, "Word is empty"
+    if len(word.split()) > 1:
+        return False, "Only single words allowed"
+    if not re.match(r"^[a-zA-Z'-]+$", word):
+        return False, "Word contains invalid characters"
+    return True, "Valid"
+
+valid, msg = validate_word(WORD)
+if not valid:
+    print(f"Rejected word '{WORD}': {msg}")
+    sys.exit(0)
 
 # --- Load current story ---
-story_text = ""
-if os.path.exists(STORY_FILE):
-    with open(STORY_FILE, "r") as f:
-        story_text = f.read().strip()
+if STORY_FILE.exists():
+    story_text = STORY_FILE.read_text().strip()
+else:
+    story_text = ""
 
-last_word = story_text.split()[-1] if story_text else None
+words = story_text.split()
+words.append(WORD)
 
-valid, msg = validate_word(WORD, last_word)
-if not valid:
-    print(f"Invalid word: {msg}")
-    # Optionally comment on the issue using GitHub API
-    exit(1)
-
-# --- Append word ---
-story_text += (" " if story_text else "") + WORD
-with open(STORY_FILE, "w") as f:
-    f.write(story_text)
+# --- Update story ---
+STORY_FILE.write_text(" ".join(words))
 
 # --- Update stats ---
-words = story_text.split()
+from collections import Counter
+
 word_count = len(words)
-common_words = Counter(words).most_common(10)
-stats_md = f"Word count: {word_count}\nMost common words: {', '.join([w[0]+'('+str(w[1])+')' for w in common_words])}\nMost recent contributor: @{AUTHOR}"
-with open(STATS_FILE, "w") as f:
-    f.write(stats_md)
+most_common = Counter(words).most_common(5)
+most_common_str = ", ".join(f"{w}({c})" for w, c in most_common)
+stats_text = f"""Word count: {word_count}
+Most common words: {most_common_str}
+Most recent contributor: {AUTHOR}
+"""
+STATS_FILE.write_text(stats_text)
 
-# --- Update README ---
-recent_words = " ".join(words[-5:])
-readme_text = f"# Collaborative Story\n\n**Current Story:**\n{recent_words} [___](https://github.com/YOUR_USERNAME/YOUR_REPO/issues/new?title=)\n\n**Stats:**\n{stats_md}"
-with open("README.md", "w") as f:
-    f.write(readme_text)
+# --- Update README (replace first link with last word issue link) ---
+if README_FILE.exists():
+    readme_text = README_FILE.read_text()
+    # Find the first link pattern [___](...)
+    readme_text = re.sub(r'\[___\]\([^\)]*\)', f"[___](https://github.com/{os.environ.get('GITHUB_REPOSITORY')}/issues/new?title=)", readme_text, count=1)
+    README_FILE.write_text(readme_text)
 
-# --- Archive if 500 words ---
-if word_count >= 500:
-    os.makedirs(STORIES_DIR, exist_ok=True)
-    story_num = len(os.listdir(STORIES_DIR)) + 1
-    shutil.move(STORY_FILE, f"{STORIES_DIR}/story_{story_num}.md")
-    shutil.move(STATS_FILE, f"{STORIES_DIR}/story_{story_num}_stats.md")
-    # Reset new story
-    starter = "Once"
-    with open(STORY_FILE, "w") as f:
-        f.write(starter)
-    with open(STATS_FILE, "w") as f:
-        f.write(f"Word count: 1\nMost common words: {starter}(1)\nMost recent contributor: system")
+# --- Archive if needed ---
+if word_count >= MAX_WORDS:
+    archive_file = STORIES_DIR / f"story_{len(list(STORIES_DIR.glob('story_*.md')))+1}.md"
+    archive_file.write_text(" ".join(words))
+    STORY_FILE.write_text("")  # reset story
+
+# --- Commit & Push ---
+subprocess.run(["git", "config", "user.name", "github-actions[bot]"])
+subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
+subprocess.run(["git", "add", "."])
+subprocess.run(["git", "commit", "-m", f"Add word: {WORD}"])
+subprocess.run(["git", "push"])
