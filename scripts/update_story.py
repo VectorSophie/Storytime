@@ -8,11 +8,11 @@ from collections import Counter
 # --- Environment ---
 WORD = os.environ.get("WORD", "").strip()
 AUTHOR = os.environ.get("AUTHOR", "unknown")
-REPO = os.environ.get("GITHUB_REPOSITORY")
+REPO = os.environ.get("GITHUB_REPOSITORY", "unknown/unknown")
 
 # --- Files ---
 STORY_FILE = Path("current_story.md")
-STATS_FILE = Path("story_stats.md")  # optional, can keep separate
+STATS_FILE = Path("story_stats.md")
 README_FILE = Path("README.md")
 STORIES_DIR = Path("stories")
 MAX_WORDS = 500
@@ -55,6 +55,10 @@ stats_table += f"| Word count | {word_count} |\n"
 stats_table += "| Most common words | " + ", ".join(f"{w}({c})" for w, c in most_common) + " |\n"
 stats_table += f"| Most recent contributor | {AUTHOR} |\n"
 
+# --- Write stats file ---
+STATS_FILE.write_text(stats_table)
+print(f"Updated stats file:\n{stats_table}")
+
 # --- Update README ---
 if README_FILE.exists():
     readme_text = README_FILE.read_text()
@@ -85,9 +89,17 @@ if word_count >= MAX_WORDS:
     STORY_FILE.write_text("")  # reset current story
     print(f"Story archived to {archive_file}")
 
-# --- Commit & Push ---
+# --- Commit & Push only if changes exist ---
 subprocess.run(["git", "config", "user.name", "github-actions[bot]"])
 subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
-subprocess.run(["git", "add", "."])
-subprocess.run(["git", "commit", "-m", f"Add word: {WORD}"], stderr=subprocess.DEVNULL)
-subprocess.run(["git", "push"])
+
+# Stage only relevant files
+subprocess.run(["git", "add", str(STORY_FILE), str(STATS_FILE), str(README_FILE)])
+
+# Check if there are staged changes
+status = subprocess.run(["git", "diff", "--cached", "--quiet"])
+if status.returncode != 0:  # changes exist
+    subprocess.run(["git", "commit", "-m", f"Add word: {WORD}"], stderr=subprocess.DEVNULL)
+    subprocess.run(["git", "push"])
+else:
+    print("No changes to commit. Skipping push.")
