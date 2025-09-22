@@ -3,13 +3,13 @@
 Welcome to the **Word-by-Word Story Project**!  
 We are writing a story **one word at a time**. Each person can only add a **single word per issue**.  
 
----
+<!-- STORY-START -->
 
 ## 📖 Current Story
 
 Once [___](https://github.com/VectorSophie/Storytime/issues/new?title=)
 
----
+<!-- STORY-END -->
 
 ## 📝 How to Play
 1. Click the `[___]` link above.  
