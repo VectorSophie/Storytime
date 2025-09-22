@@ -60,9 +60,14 @@ STATS_FILE.write_text(stats_text)
 # --- Update README (replace first link with last word issue link) ---
 if README_FILE.exists():
     readme_text = README_FILE.read_text()
-    # Find the first link pattern [___](...)
-    readme_text = re.sub(r'\[___\]\([^\)]*\)', f"[___](https://github.com/{os.environ.get('GITHUB_REPOSITORY')}/issues/new?title=)", readme_text, count=1)
-    README_FILE.write_text(readme_text)
+    new_story_text = story_text.replace("\n", " ") + " [___](https://github.com/VectorSophie/Storytime/issues/new?title=)"
+    updated_readme = re.sub(
+        r"<!-- STORY-START -->.*<!-- STORY-END -->",
+        f"<!-- STORY-START -->\n{new_story_text}\n<!-- STORY-END -->",
+        readme_text,
+        flags=re.DOTALL
+    )
+    README_FILE.write_text(updated_readme)
 
 # --- Archive if needed ---
 if word_count >= MAX_WORDS:
