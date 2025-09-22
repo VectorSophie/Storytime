@@ -1,13 +1,13 @@
 # Collaborative Story
 
-Welcome to the **Word-by-Word Story Project**!  
+Welcome to the **Collaborative Story Project**! 
 We are writing a story **one word at a time**. Each person can only add a **single word per issue**.  
 
 <!-- STORY-START -->
 Once upon upon [___](https://github.com/VectorSophie/Storytime/issues/new?title=)
 <!-- STORY-END -->
 
-## 📝 How to Play
+## How to Play
 1. Click the `[___]` link above.  
 2. Enter **your word** in the **issue title field**.  
 3. Submit the issue — the bot will automatically:  
@@ -18,10 +18,9 @@ Once upon upon [___](https://github.com/VectorSophie/Storytime/issues/new?title=
 
 ---
 
-## 📊 Stats
-See [`story_stats.md`](story_stats.md) for live stats.  
+## Stats
+<!-- STATS-START -->
 
----
+<!-- STATS-END -->
 
-## 📚 Archived Stories
-Completed stories will appear in the [`/stories`](stories/) folder.
+
