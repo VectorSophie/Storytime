@@ -1,0 +1,30 @@
+name: Collaborative Story
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  add-word:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install nltk PyGithub
+
+      - name: Run story bot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          WORD: ${{ github.event.issue.title }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          python scripts/update_story.py

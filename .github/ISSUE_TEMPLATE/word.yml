@@ -1,0 +1,12 @@
+name: Add a Word
+description: "Submit the next word in the collaborative story. Type your word in the **title** field."
+title: ""
+labels: ["story-word"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Instructions:**  
+        - Only one word  
+        - Letters only (no numbers or symbols)  
+        - Avoid repeating the same adjective consecutively
