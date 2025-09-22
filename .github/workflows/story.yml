@@ -4,6 +4,9 @@ on:
   issues:
     types: [opened]
 
+permissions:
+  contents: write
+
 jobs:
   add-word:
     runs-on: ubuntu-latest
