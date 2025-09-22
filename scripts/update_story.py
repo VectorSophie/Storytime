@@ -3,19 +3,19 @@ import sys
 import re
 from pathlib import Path
 import subprocess
+from collections import Counter
 
-# Get environment variables
+# --- Environment ---
 WORD = os.environ.get("WORD", "").strip()
 AUTHOR = os.environ.get("AUTHOR", "unknown")
+REPO = os.environ.get("GITHUB_REPOSITORY")
 
-# File paths
+# --- Files ---
 STORY_FILE = Path("current_story.md")
-STATS_FILE = Path("story_stats.md")
+STATS_FILE = Path("story_stats.md")  # optional, can keep separate
 README_FILE = Path("README.md")
 STORIES_DIR = Path("stories")
 MAX_WORDS = 500
-
-# Ensure stories directory exists
 STORIES_DIR.mkdir(exist_ok=True)
 
 # --- Validation ---
@@ -41,43 +41,53 @@ else:
 
 words = story_text.split()
 words.append(WORD)
+story_text = " ".join(words)
 
-# --- Update story ---
-STORY_FILE.write_text(" ".join(words))
+# --- Update current story file ---
+STORY_FILE.write_text(story_text)
 
-# --- Update stats ---
-from collections import Counter
-
+# --- Generate story stats ---
 word_count = len(words)
 most_common = Counter(words).most_common(5)
-most_common_str = ", ".join(f"{w}({c})" for w, c in most_common)
-stats_text = f"""Word count: {word_count}
-Most common words: {most_common_str}
-Most recent contributor: {AUTHOR}
-"""
-STATS_FILE.write_text(stats_text)
 
-# --- Update README (replace first link with last word issue link) ---
+stats_table = "| Metric | Value |\n| --- | --- |\n"
+stats_table += f"| Word count | {word_count} |\n"
+stats_table += "| Most common words | " + ", ".join(f"{w}({c})" for w, c in most_common) + " |\n"
+stats_table += f"| Most recent contributor | {AUTHOR} |\n"
+
+# --- Update README ---
 if README_FILE.exists():
     readme_text = README_FILE.read_text()
-    new_story_text = story_text.replace("\n", " ") + " [___](https://github.com/VectorSophie/Storytime/issues/new?title=)"
-    updated_readme = re.sub(
+    
+    # Update story section
+    story_section = f"{story_text} [___](https://github.com/{REPO}/issues/new?title=)"
+    readme_text = re.sub(
         r"<!-- STORY-START -->.*<!-- STORY-END -->",
-        f"<!-- STORY-START -->\n{new_story_text}\n<!-- STORY-END -->",
+        f"<!-- STORY-START -->\n{story_section}\n<!-- STORY-END -->",
         readme_text,
         flags=re.DOTALL
     )
-    README_FILE.write_text(updated_readme)
+    
+    # Update stats section
+    readme_text = re.sub(
+        r"<!-- STATS-START -->.*<!-- STATS-END -->",
+        f"<!-- STATS-START -->\n{stats_table}\n<!-- STATS-END -->",
+        readme_text,
+        flags=re.DOTALL
+    )
+    
+    README_FILE.write_text(readme_text)
 
-# --- Archive if needed ---
+# --- Archive story if needed ---
 if word_count >= MAX_WORDS:
     archive_file = STORIES_DIR / f"story_{len(list(STORIES_DIR.glob('story_*.md')))+1}.md"
-    archive_file.write_text(" ".join(words))
-    STORY_FILE.write_text("")  # reset story
+    archive_file.write_text(story_text)
+    STORY_FILE.write_text("")  # reset current story
+    print(f"Story archived to {archive_file}")
 
 # --- Commit & Push ---
 subprocess.run(["git", "config", "user.name", "github-actions[bot]"])
 subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
 subprocess.run(["git", "add", "."])
-subprocess.run(["git", "commit", "-m", f"Add word: {WORD}"])
+subprocess.run(["git", "commit", "-m", f"Add word: {WORD}"], stderr=subprocess.DEVNULL)
 subprocess.run(["git", "push"])
