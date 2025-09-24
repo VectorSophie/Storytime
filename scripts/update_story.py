@@ -24,7 +24,7 @@ STORIES_DIR.mkdir(exist_ok=True)
 # --- GitHub API helpers ---
 def github_api_request(method, url, data=None):
     if not TOKEN:
-        print("⚠️ No GITHUB_TOKEN provided")
+        print("No GITHUB_TOKEN provided")
         return None
     headers = {"Authorization": f"token {TOKEN}"}
     r = requests.request(method, url, headers=headers, json=data)
@@ -42,6 +42,11 @@ def close_issue():
         url = f"https://api.github.com/repos/{REPO}/issues/{ISSUE_NUMBER}"
         github_api_request("PATCH", url, {"state": "closed"})
 
+def add_label(label):
+    if ISSUE_NUMBER:
+        url = f"https://api.github.com/repos/{REPO}/issues/{ISSUE_NUMBER}/labels"
+        github_api_request("POST", url, {"labels": [label]})
+
 # --- Validation ---
 def validate_word(word):
     if not word:
@@ -52,10 +57,22 @@ def validate_word(word):
         return False, "Word contains invalid characters"
     return True, "Valid"
 
+def rejection_label(msg: str) -> str:
+    msg_lower = msg.lower()
+    if "empty" in msg_lower:
+        return "empty-word"
+    if "single words" in msg_lower:
+        return "multi-word"
+    if "invalid characters" in msg_lower:
+        return "invalid-chars"
+    return "invalid-word"  # fallback
+
 valid, msg = validate_word(WORD)
 if not valid:
     print(f"Rejected word '{WORD}': {msg}")
-    comment_on_issue(f"Your word **'{WORD}'** was rejected: {msg}")
+    if ISSUE_NUMBER:
+        comment_on_issue(f"Your word **'{WORD}'** was rejected: {msg}")
+        add_label(rejection_label(msg))
     sys.exit(1)
 
 # --- Load current story ---
@@ -86,7 +103,6 @@ print(f"Updated stats file:\n{stats_table}")
 
 # --- Update README ---
 if README_FILE.exists():
-    import re
     readme_text = README_FILE.read_text()
     story_section = f"{story_text} [___](https://github.com/{REPO}/issues/new?title=)"
     readme_text = re.sub(
@@ -122,6 +138,8 @@ if status.returncode != 0:
 else:
     print("No changes to commit. Skipping push.")
 
-# --- Close issue if everything succeeded ---
-close_issue()
-print(f"Closed issue #{ISSUE_NUMBER} after accepting word '{WORD}'")
+# --- Success: notify and close issue ---
+if ISSUE_NUMBER:
+    comment_on_issue(f"Your word **'{WORD}'** was accepted and added to the story")
+    close_issue()
+    print(f"Closed issue #{ISSUE_NUMBER} after accepting word '{WORD}'")
