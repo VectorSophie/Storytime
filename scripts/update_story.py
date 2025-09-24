@@ -60,11 +60,11 @@ def validate_word(word):
 def rejection_label(msg: str) -> str:
     msg_lower = msg.lower()
     if "empty" in msg_lower:
-        return "empty-word"
+        return "empty word"
     if "single words" in msg_lower:
-        return "multi-word"
+        return "multiple words"
     if "invalid characters" in msg_lower:
-        return "invalid-chars"
+        return "invalid characters"
     return "invalid-word"  # fallback
 
 valid, msg = validate_word(WORD)
@@ -140,6 +140,7 @@ else:
 
 # --- Success: notify and close issue ---
 if ISSUE_NUMBER:
+    add_label("valid word")
     comment_on_issue(f"Your word **'{WORD}'** was accepted and added to the story")
     close_issue()
     print(f"Closed issue #{ISSUE_NUMBER} after accepting word '{WORD}'")
