@@ -4,7 +4,7 @@ Welcome to the **Collaborative Story Project**!
 We are writing a story **one word at a time**. Each person can only add a **single word per issue**.  
 
 <!-- STORY-START -->
-Once upon upon a time test users rebelled against the creator VectorSophie [___](https://github.com/VectorSophie/Storytime/issues/new?title=)
+Once upon upon a time test users rebelled against the creator VectorSophie they [___](https://github.com/VectorSophie/Storytime/issues/new?title=)
 <!-- STORY-END -->
 
 ## How to Play
@@ -22,7 +22,7 @@ Once upon upon a time test users rebelled against the creator VectorSophie [___]
 <!-- STATS-START -->
 | Metric | Value |
 | --- | --- |
-| Word count | 12 |
+| Word count | 13 |
 | Most common words | upon(2), Once(1), a(1), time(1), test(1) |
 | Most recent contributor | VectorSophie |
 
