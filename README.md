@@ -13,7 +13,7 @@ Once upon upon a time test users rebelled against the creator VectorSophie they 
 3. Submit the issue — the bot will automatically:  
    - Validate your word  
    - Append it to the story  
-   - Update this README and stats  
+   - Update this README and stat 
    - Archive the story when it reaches 500 words  
 
 ---
